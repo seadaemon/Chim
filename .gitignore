@@ -1,5 +1,6 @@
 /.vs
 /assets
-/docs
+/docs/html
+/docs/latex
 /out
 Doxyfile

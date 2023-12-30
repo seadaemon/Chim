@@ -1,1 +1,2 @@
 # CHIM
+CHIM is a simple 3D renderer. I created this project to learn the Vulkan API. Most of the boilerplate code was obtained from [this extremely useful tutorial](https://vulkan-tutorial.com/resources/vulkan_tutorial_en.pdf).

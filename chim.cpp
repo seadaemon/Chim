@@ -269,6 +269,13 @@ chim::QueueFamilyIndices chim::Chim::FindQueueFamilies(VkPhysicalDevice device) 
 			indices.graphicsFamily = i;
 		}
 
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
+
+		if (presentSupport) {
+			indices.presentFamily = i;
+		}
+
 		if (indices.isComplete()) {
 			break;
 		}

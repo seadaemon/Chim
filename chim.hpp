@@ -1,7 +1,7 @@
 /**
 * @file chim.hpp
 * @author GP
-* @brief Initializes and runs the main loop of the program.
+* @brief Initializes the SDL window and the Vulkan renderer.
 */
 #ifndef CHIM_HPP
 #define CHIM_HPP
@@ -10,6 +10,7 @@
 #include <exception>
 #include <vector>
 #include <map>
+#include <set>
 #include <optional>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -90,6 +91,7 @@ namespace chim {
 		VkDevice device_;
 		VkQueue graphics_queue_;
 		VkSurfaceKHR surface_;
+		VkQueue present_queue_;
 		const std::vector<const char*> validation_layers_ = { "VK_LAYER_KHRONOS_validation" };
 	}; // class Chim
 }

@@ -30,6 +30,7 @@ void chim::Chim::Init(void) {
 	CreateImageViews();
 	CreateRenderPass();
 	CreateGraphicsPipeline();
+	CreateFrameBuffers();
 }
 
 void chim::Chim::Run(void) {
@@ -49,8 +50,8 @@ void chim::Chim::Run(void) {
 }
 
 void chim::Chim::Cleanup(void) {
-	if (enable_validation_layers) {
-		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+	for (auto framebuffer : swap_chain_frame_buffers_) {
+		vkDestroyFramebuffer(device_, framebuffer, nullptr);
 	}
 	vkDestroyPipeline(device_, graphics_pipeline_, nullptr);
 	vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
@@ -62,6 +63,11 @@ void chim::Chim::Cleanup(void) {
 
 	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 	vkDestroyDevice(device_, nullptr);
+
+	if (enable_validation_layers) {
+		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+	}
+
 	vkDestroySurfaceKHR(instance_, surface_, nullptr);
 	vkDestroyInstance(instance_, nullptr);
 	SDL_DestroyWindow(window_);
@@ -126,6 +132,29 @@ VkResult chim::Chim::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkD
 	}
 	else {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+}
+
+void chim::Chim::CreateFrameBuffers(void) {
+	swap_chain_frame_buffers_.resize(swap_chain_image_views_.size());
+
+	for (size_t i = 0; i < swap_chain_image_views_.size(); i++) {
+		VkImageView attachments[] = {
+			swap_chain_image_views_[i]
+		};
+
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = render_pass_;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = swap_chain_extent_.width;
+		framebufferInfo.height = swap_chain_extent_.height;
+		framebufferInfo.layers = 1;
+
+		if (vkCreateFramebuffer(device_, &framebufferInfo, nullptr, &swap_chain_frame_buffers_[i]) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create framebuffer!");
+		}
 	}
 }
 

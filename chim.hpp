@@ -84,6 +84,7 @@ namespace chim {
 		void CreateImageViews(void);
 		void CreateRenderPass(void);
 		void CreateGraphicsPipeline(void);
+		void CreateFrameBuffers(void);
 		
 		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create_info);
 		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
@@ -126,6 +127,7 @@ namespace chim {
 		VkFormat swap_chain_image_format_;
 		VkExtent2D swap_chain_extent_;
 		std::vector<VkImageView> swap_chain_image_views_;
+		std::vector<VkFramebuffer> swap_chain_frame_buffers_;
 
 		VkRenderPass render_pass_;
 		VkPipeline graphics_pipeline_;

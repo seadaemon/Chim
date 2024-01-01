@@ -11,6 +11,9 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <cstdint>
+#include <limits>
+#include <algorithm>
 #include <optional>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -75,6 +78,8 @@ namespace chim {
 		void CreateSurface(void);
 		void PickPhysicalDevice(void);
 		void CreateLogicalDevice(void);
+		void CreateSwapChain(void);
+		void CreateImageViews(void);
 		
 		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create_info);
 		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
@@ -86,7 +91,11 @@ namespace chim {
 		bool IsDeviceSuitable(VkPhysicalDevice device);
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+		// Swap chain
 		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 	private:
 		const uint32_t window_width_ = 1280;
@@ -94,8 +103,7 @@ namespace chim {
 		bool keep_window_open_ = true;
 		// SDL
 		SDL_Window* window_ = nullptr;
-		//SDL_Surface* window_icon_ = nullptr; // TBA
-		SDL_Event ev_;
+		SDL_Event ev_; //SDL_Surface* window_icon_ = nullptr; // TBA
 		// Vulkan
 		VkInstance instance_;
 		VkDebugUtilsMessengerEXT debug_messenger_;
@@ -104,6 +112,12 @@ namespace chim {
 		VkQueue graphics_queue_;
 		VkSurfaceKHR surface_;
 		VkQueue present_queue_;
+		// Swap chain
+		VkSwapchainKHR swap_chain_;
+		std::vector<VkImage> swap_chain_images_;
+		VkFormat swap_chain_image_format_;
+		VkExtent2D swap_chain_extent_;
+		
 		const std::vector<const char*> validation_layers_ = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> device_extensions_ = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	}; // class Chim

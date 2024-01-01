@@ -26,6 +26,8 @@ void chim::Chim::Init(void) {
 	CreateSurface();
 	PickPhysicalDevice();
 	CreateLogicalDevice();
+	CreateSwapChain();
+	CreateImageViews();
 }
 
 void chim::Chim::Run(void) {
@@ -48,6 +50,7 @@ void chim::Chim::Cleanup(void) {
 	if (enable_validation_layers) {
 		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
 	}
+	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 	vkDestroyDevice(device_, nullptr);
 	vkDestroySurfaceKHR(instance_, surface_, nullptr);
 	vkDestroyInstance(instance_, nullptr);
@@ -335,6 +338,44 @@ chim::SwapChainSupportDetails chim::Chim::QuerySwapChainSupport(VkPhysicalDevice
 	return details;
 }
 
+VkSurfaceFormatKHR chim::Chim::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	for (const auto& availableFormat : availableFormats) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+
+	return availableFormats[0];
+}
+
+VkPresentModeKHR chim::Chim::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+	for (const auto& availablePresentMode : availablePresentModes) {
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+			return availablePresentMode;
+		}
+	}
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D chim::Chim::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+		return capabilities.currentExtent;
+	}
+	else {
+		int width, height;
+		SDL_Vulkan_GetDrawableSize(window_, &width, &height);
+		VkExtent2D actualExtent = {
+			static_cast<uint32_t>(width),
+			static_cast<uint32_t>(height)
+		};
+
+		actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+		actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+		return actualExtent;
+	}
+}
+
 void chim::Chim::CreateLogicalDevice(void) {
 	QueueFamilyIndices indices = FindQueueFamilies(physical_device_);
 
@@ -373,9 +414,67 @@ void chim::Chim::CreateLogicalDevice(void) {
 	}
 
 	if (vkCreateDevice(physical_device_, &createInfo, nullptr, &device_) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create logical device!");
+		throw std::runtime_error("Failed to create logical device!");
 	}
 
 	vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphics_queue_);
 	vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &present_queue_);
+}
+
+void chim::Chim::CreateSwapChain(void) {
+	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(physical_device_);
+
+	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
+	VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+	VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
+
+	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+		imageCount = swapChainSupport.capabilities.maxImageCount;
+	}
+
+	VkSwapchainCreateInfoKHR createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface = surface_;
+
+	createInfo.minImageCount = imageCount;
+	createInfo.imageFormat = surfaceFormat.format;
+	createInfo.imageColorSpace = surfaceFormat.colorSpace;
+	createInfo.imageExtent = extent;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	QueueFamilyIndices indices = FindQueueFamilies(physical_device_);
+	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
+	if (indices.graphicsFamily != indices.presentFamily) {
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+	}
+	else {
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	}
+
+	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createInfo.presentMode = presentMode;
+	createInfo.clipped = VK_TRUE;
+
+	createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+	if (vkCreateSwapchainKHR(device_, &createInfo, nullptr, &swap_chain_) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create swap chain!");
+	}
+
+	vkGetSwapchainImagesKHR(device_, swap_chain_, &imageCount, nullptr);
+	swap_chain_images_.resize(imageCount);
+	vkGetSwapchainImagesKHR(device_, swap_chain_, &imageCount, swap_chain_images_.data());
+
+	swap_chain_image_format_ = surfaceFormat.format;
+	swap_chain_extent_ = extent;
+}
+
+void chim::Chim::CreateImageViews(void) {
+	
 }

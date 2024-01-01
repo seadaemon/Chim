@@ -128,6 +128,7 @@ namespace chim {
 		std::vector<VkImageView> swap_chain_image_views_;
 
 		VkRenderPass render_pass_;
+		VkPipeline graphics_pipeline_;
 		VkPipelineLayout pipeline_layout_;
 
 		const std::vector<const char*> validation_layers_ = { "VK_LAYER_KHRONOS_validation" };

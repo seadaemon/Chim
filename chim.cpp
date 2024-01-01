@@ -52,7 +52,7 @@ void chim::Chim::Cleanup(void) {
 	if (enable_validation_layers) {
 		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
 	}
-
+	vkDestroyPipeline(device_, graphics_pipeline_, nullptr);
 	vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
 	vkDestroyRenderPass(device_, render_pass_, nullptr);
 
@@ -591,7 +591,27 @@ void chim::Chim::CreateGraphicsPipeline() {
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 
 	if (vkCreatePipelineLayout(device_, &pipelineLayoutInfo, nullptr, &pipeline_layout_) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
+		throw std::runtime_error("Failed to create pipeline layout!");
+	}
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = shaderStages;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDynamicState = &dynamicState;
+	pipelineInfo.layout = pipeline_layout_;
+	pipelineInfo.renderPass = render_pass_;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+	if (vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphics_pipeline_) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create graphics pipeline!");
 	}
 
 	vkDestroyShaderModule(device_, fragShaderModule, nullptr);

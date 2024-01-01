@@ -23,10 +23,14 @@ set(VULKAN_LIB_PATH C:/VulkanSDK/1.3.268.0)
 # Other libraries
 set(LIBRARY_PATH C:/Software/Libraries)
 include_directories(${LIBRARY_PATH}/include)
-
+link_directories(${LIBRARY_PATH}/lib)
 # SDL 2
 find_library(SDL2_LIBRARY SDL2 HINT ${VULKAN_LIB_PATH}/Lib)
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY})
+
+# SDL Image
+#find_library(SDL2_IMAGE_LIBRARY SDL2_image HINT ${LIBRARY_PATH}/lib REQUIRED)
+#target_link_libraries(${PROJECT_NAME} ${SDL2_IMAGE_LIBRARY})
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)

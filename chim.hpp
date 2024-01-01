@@ -17,6 +17,8 @@
 #include <vulkan/vulkan.hpp>
 #include <SDL.h>
 #include <SDL_vulkan.h>
+//#include <SDL_image.h> //TODO: Fix this import
+
 #ifdef NDEBUG
 const bool enable_validation_layers = false;
 #else
@@ -83,6 +85,7 @@ namespace chim {
 		bool keep_window_open_ = true;
 		// SDL
 		SDL_Window* window_ = nullptr;
+		//SDL_Surface* window_icon_ = nullptr; // TBA
 		SDL_Event ev_;
 		// Vulkan
 		VkInstance instance_;

@@ -29,7 +29,7 @@ void chim::Chim::Init(void) {
 }
 
 void chim::Chim::Run(void) {
-
+	LOG("[chim::Chim::Run] Reached!");
 	while (keep_window_open_) {
 
 		SDL_UpdateWindowSurface(window_);
@@ -251,7 +251,32 @@ int chim::Chim::RateDeviceSuitability(VkPhysicalDevice device){
 
 bool chim::Chim::IsDeviceSuitable(VkPhysicalDevice device){
 	QueueFamilyIndices indices = FindQueueFamilies(device);
-	return indices.isComplete();
+
+	bool extensionsSupported = CheckDeviceExtensionSupport(device);
+
+	bool swapChainAdequate = false;
+	if (extensionsSupported) {
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+	}
+
+	return indices.isComplete() && extensionsSupported && swapChainAdequate;
+}
+
+bool chim::Chim::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+	std::set<std::string> requiredExtensions(device_extensions_.begin(), device_extensions_.end());
+
+	for (const auto& extension : availableExtensions) {
+		requiredExtensions.erase(extension.extensionName);
+	}
+
+	return requiredExtensions.empty();
 }
 
 chim::QueueFamilyIndices chim::Chim::FindQueueFamilies(VkPhysicalDevice device) {
@@ -286,6 +311,30 @@ chim::QueueFamilyIndices chim::Chim::FindQueueFamilies(VkPhysicalDevice device) 
 	return indices;
 }
 
+chim::SwapChainSupportDetails chim::Chim::QuerySwapChainSupport(VkPhysicalDevice device) {
+	SwapChainSupportDetails details;
+
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface_, &details.capabilities);
+
+	uint32_t formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface_, &formatCount, nullptr);
+
+	if (formatCount != 0) {
+		details.formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface_, &formatCount, details.formats.data());
+	}
+
+	uint32_t presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface_, &presentModeCount, nullptr);
+
+	if (presentModeCount != 0) {
+		details.presentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface_, &presentModeCount, details.presentModes.data());
+	}
+
+	return details;
+}
+
 void chim::Chim::CreateLogicalDevice(void) {
 	QueueFamilyIndices indices = FindQueueFamilies(physical_device_);
 
@@ -312,7 +361,8 @@ void chim::Chim::CreateLogicalDevice(void) {
 
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
-	createInfo.enabledExtensionCount = 0;
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(device_extensions_.size());
+	createInfo.ppEnabledExtensionNames = device_extensions_.data();
 
 	if (enable_validation_layers) {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validation_layers_.size());

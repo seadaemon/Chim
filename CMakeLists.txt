@@ -8,7 +8,7 @@ set(HDRS
 )
 
 set(SRCS 
-	main.cpp chim.cpp
+	main.cpp chim.cpp basic.vert basic.frag
 )
 
 # Add source to this project's executable.

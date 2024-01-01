@@ -15,11 +15,13 @@
 #include <limits>
 #include <algorithm>
 #include <optional>
+#include <fstream>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <vulkan/vulkan.hpp>
 #include <SDL.h>
 #include <SDL_vulkan.h>
+#include "path_config.h"
 //#include <SDL_image.h> //TODO: Fix this import
 
 #ifdef NDEBUG
@@ -80,6 +82,8 @@ namespace chim {
 		void CreateLogicalDevice(void);
 		void CreateSwapChain(void);
 		void CreateImageViews(void);
+		void CreateRenderPass(void);
+		void CreateGraphicsPipeline(void);
 		
 		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create_info);
 		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
@@ -96,6 +100,10 @@ namespace chim {
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+		VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
+		static std::vector<char> ReadFile(const std::string& filename);
 
 	private:
 		const uint32_t window_width_ = 1280;
@@ -117,7 +125,11 @@ namespace chim {
 		std::vector<VkImage> swap_chain_images_;
 		VkFormat swap_chain_image_format_;
 		VkExtent2D swap_chain_extent_;
-		
+		std::vector<VkImageView> swap_chain_image_views_;
+
+		VkRenderPass render_pass_;
+		VkPipelineLayout pipeline_layout_;
+
 		const std::vector<const char*> validation_layers_ = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> device_extensions_ = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	}; // class Chim

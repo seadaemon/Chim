@@ -36,11 +36,9 @@ void chim::Chim::Init(void) {
 }
 
 void chim::Chim::Run(void) {
-	LOG("[chim::Chim::Run] Reached!");
 	while (keep_window_open_) {
 
-		SDL_UpdateWindowSurface(window_);
-
+		// Check for user input
 		while (SDL_PollEvent(&ev_) != 0) {
 			switch (ev_.type) {
 			case SDL_QUIT:
@@ -48,6 +46,10 @@ void chim::Chim::Run(void) {
 				break;
 			}
 		}
+
+		// Draw frame
+		SDL_UpdateWindowSurface(window_);
+
 	}
 }
 

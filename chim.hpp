@@ -87,9 +87,11 @@ namespace chim {
 		void CreateFrameBuffers(void);
 		void CreateCommandPool(void);
 		void CreateCommandBuffer(void);
-
+		void CreateSyncObjects(void);
 
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+		void DrawFrame(void);
 
 		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create_info);
 		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
@@ -140,6 +142,10 @@ namespace chim {
 
 		VkCommandPool command_pool_;
 		VkCommandBuffer command_buffer_;
+
+		VkSemaphore image_available_semaphore_;
+		VkSemaphore render_finished_semaphore_;
+		VkFence in_flight_fence_;
 
 		const std::vector<const char*> validation_layers_ = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> device_extensions_ = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };

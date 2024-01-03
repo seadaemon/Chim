@@ -33,6 +33,7 @@ void chim::Chim::Init(void) {
 	CreateFrameBuffers();
 	CreateCommandPool();
 	CreateCommandBuffer();
+	CreateSyncObjects();
 }
 
 void chim::Chim::Run(void) {
@@ -47,13 +48,16 @@ void chim::Chim::Run(void) {
 			}
 		}
 
-		// Draw frame
-		SDL_UpdateWindowSurface(window_);
+		DrawFrame();
 
 	}
 }
 
 void chim::Chim::Cleanup(void) {
+	vkDestroySemaphore(device_, image_available_semaphore_, nullptr);
+	vkDestroySemaphore(device_, render_finished_semaphore_, nullptr);
+	vkDestroyFence(device_, in_flight_fence_, nullptr);
+
 	vkDestroyCommandPool(device_, command_pool_, nullptr);
 
 	for (auto framebuffer : swap_chain_frame_buffers_) {
@@ -78,6 +82,10 @@ void chim::Chim::Cleanup(void) {
 	vkDestroyInstance(instance_, nullptr);
 	SDL_DestroyWindow(window_);
 	SDL_Quit();
+}
+
+void chim::Chim::DrawFrame(void) {
+	SDL_UpdateWindowSurface(window_);
 }
 
 /**
@@ -193,6 +201,21 @@ void chim::Chim::CreateCommandBuffer(void) {
 
 	if (vkAllocateCommandBuffers(device_, &allocInfo, &command_buffer_) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate command buffers!");
+	}
+}
+
+void chim::Chim::CreateSyncObjects(void) {
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	if (vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &image_available_semaphore_) != VK_SUCCESS ||
+		vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &render_finished_semaphore_) != VK_SUCCESS ||
+		vkCreateFence(device_, &fenceInfo, nullptr, &in_flight_fence_) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create synchronization objects for a frame!");
 	}
 }
 

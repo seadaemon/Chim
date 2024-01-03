@@ -51,6 +51,9 @@ void chim::Chim::Run(void) {
 		DrawFrame();
 
 	}
+	
+	vkDeviceWaitIdle(device_);
+
 }
 
 void chim::Chim::Cleanup(void) {
@@ -85,7 +88,49 @@ void chim::Chim::Cleanup(void) {
 }
 
 void chim::Chim::DrawFrame(void) {
-	SDL_UpdateWindowSurface(window_);
+	vkWaitForFences(device_, 1, &in_flight_fence_, VK_TRUE, UINT64_MAX);
+	vkResetFences(device_, 1, &in_flight_fence_);
+
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(device_, swap_chain_, UINT64_MAX, image_available_semaphore_, VK_NULL_HANDLE, &imageIndex);
+
+	vkResetCommandBuffer(command_buffer_, /*VkCommandBufferResetFlagBits*/ 0);
+	RecordCommandBuffer(command_buffer_, imageIndex);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore waitSemaphores[] = { image_available_semaphore_ };
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &command_buffer_;
+
+	VkSemaphore signalSemaphores[] = { render_finished_semaphore_ };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	if (vkQueueSubmit(graphics_queue_, 1, &submitInfo, in_flight_fence_) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to submit draw command buffer!");
+	}
+
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+
+	VkSwapchainKHR swapChains[] = { swap_chain_ };
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+
+	presentInfo.pImageIndices = &imageIndex;
+
+	vkQueuePresentKHR(present_queue_, &presentInfo);
+	//SDL_UpdateWindowSurface(window_);
 }
 
 /**
@@ -350,7 +395,7 @@ void chim::Chim::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-		throw std::runtime_error("failed to begin recording command buffer!");
+		throw std::runtime_error("Failed to begin recording command buffer!");
 	}
 
 	VkRenderPassBeginInfo renderPassInfo{};

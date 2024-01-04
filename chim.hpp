@@ -117,6 +117,7 @@ namespace chim {
 		const uint32_t window_width_ = 1280;
 		const uint32_t window_height_ = 720;
 		bool keep_window_open_ = true;
+		const int MAX_FRAMES_IN_FLIGHT = 2;
 		// SDL
 		SDL_Window* window_ = nullptr;
 		SDL_Event ev_; //SDL_Surface* window_icon_ = nullptr; // TBA

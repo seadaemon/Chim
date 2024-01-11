@@ -34,7 +34,7 @@ void Chim::Init(void) {
 	CreateGraphicsPipeline();
 	CreateFrameBuffers();
 	CreateCommandPool();
-	CreateCommandBuffer();
+	CreateCommandBuffers();
 	CreateSyncObjects();
 }
 
@@ -59,9 +59,11 @@ void Chim::Run(void) {
 }
 
 void Chim::Cleanup(void) {
-	vkDestroySemaphore(device_, image_available_semaphore_, nullptr);
-	vkDestroySemaphore(device_, render_finished_semaphore_, nullptr);
-	vkDestroyFence(device_, in_flight_fence_, nullptr);
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroySemaphore(device_, render_finished_semaphores_[i], nullptr);
+		vkDestroySemaphore(device_, image_available_semaphores_[i], nullptr);
+		vkDestroyFence(device_, in_flight_fences_[i], nullptr);
+	}
 
 	vkDestroyCommandPool(device_, command_pool_, nullptr);
 
@@ -90,32 +92,32 @@ void Chim::Cleanup(void) {
 }
 
 void Chim::DrawFrame(void) {
-	vkWaitForFences(device_, 1, &in_flight_fence_, VK_TRUE, UINT64_MAX);
-	vkResetFences(device_, 1, &in_flight_fence_);
+	vkWaitForFences(device_, 1, &in_flight_fences_[current_frame_], VK_TRUE, UINT64_MAX);
+	vkResetFences(device_, 1, &in_flight_fences_[current_frame_]);
 
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(device_, swap_chain_, UINT64_MAX, image_available_semaphore_, VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(device_, swap_chain_, UINT64_MAX, image_available_semaphores_[current_frame_], VK_NULL_HANDLE, &imageIndex);
 
-	vkResetCommandBuffer(command_buffer_, /*VkCommandBufferResetFlagBits*/ 0);
-	RecordCommandBuffer(command_buffer_, imageIndex);
+	vkResetCommandBuffer(command_buffers_[current_frame_], 0);
+	RecordCommandBuffer(command_buffers_[current_frame_], imageIndex);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { image_available_semaphore_ };
+	VkSemaphore waitSemaphores[] = { image_available_semaphores_[current_frame_] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &command_buffer_;
+	submitInfo.pCommandBuffers = &command_buffers_[current_frame_];
 
-	VkSemaphore signalSemaphores[] = { render_finished_semaphore_ };
+	VkSemaphore signalSemaphores[] = { render_finished_semaphores_[current_frame_] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(graphics_queue_, 1, &submitInfo, in_flight_fence_) != VK_SUCCESS) {
+	if (vkQueueSubmit(graphics_queue_, 1, &submitInfo, in_flight_fences_[current_frame_]) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to submit draw command buffer!");
 	}
 
@@ -132,6 +134,9 @@ void Chim::DrawFrame(void) {
 	presentInfo.pImageIndices = &imageIndex;
 
 	vkQueuePresentKHR(present_queue_, &presentInfo);
+
+	current_frame_ = (current_frame_ + 1) & (MAX_FRAMES_IN_FLIGHT - 1);
+
 	//SDL_UpdateWindowSurface(window_);
 }
 
@@ -239,19 +244,24 @@ void Chim::CreateCommandPool(void) {
 	}
 }
 
-void Chim::CreateCommandBuffer(void) {
+void Chim::CreateCommandBuffers(void) {
+	command_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = command_pool_;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
+	allocInfo.commandBufferCount = (uint32_t)command_buffers_.size();
 
-	if (vkAllocateCommandBuffers(device_, &allocInfo, &command_buffer_) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(device_, &allocInfo, command_buffers_.data()) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate command buffers!");
 	}
 }
 
 void Chim::CreateSyncObjects(void) {
+	image_available_semaphores_.resize(MAX_FRAMES_IN_FLIGHT);
+	render_finished_semaphores_.resize(MAX_FRAMES_IN_FLIGHT);
+	in_flight_fences_.resize(MAX_FRAMES_IN_FLIGHT);
+
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -259,10 +269,13 @@ void Chim::CreateSyncObjects(void) {
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	if (vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &image_available_semaphore_) != VK_SUCCESS ||
-		vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &render_finished_semaphore_) != VK_SUCCESS ||
-		vkCreateFence(device_, &fenceInfo, nullptr, &in_flight_fence_) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create synchronization objects for a frame!");
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		if (vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &image_available_semaphores_[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &render_finished_semaphores_[i]) != VK_SUCCESS ||
+			vkCreateFence(device_, &fenceInfo, nullptr, &in_flight_fences_[i]) != VK_SUCCESS) {
+
+			throw std::runtime_error("Failed to create synchronization objects for a frame!");
+		}
 	}
 }
 

@@ -86,7 +86,7 @@ namespace chim {
 		void CreateGraphicsPipeline(void);
 		void CreateFrameBuffers(void);
 		void CreateCommandPool(void);
-		void CreateCommandBuffer(void);
+		void CreateCommandBuffers(void);
 		void CreateSyncObjects(void);
 
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -118,6 +118,7 @@ namespace chim {
 		const uint32_t window_height_ = 720;
 		bool keep_window_open_ = true;
 		const int MAX_FRAMES_IN_FLIGHT = 2;
+		uint32_t current_frame_ = 0;
 		// SDL
 		SDL_Window* window_ = nullptr;
 		SDL_Event ev_; //SDL_Surface* window_icon_ = nullptr; // TBA
@@ -142,11 +143,11 @@ namespace chim {
 		VkPipelineLayout pipeline_layout_;
 
 		VkCommandPool command_pool_;
-		VkCommandBuffer command_buffer_;
 
-		VkSemaphore image_available_semaphore_;
-		VkSemaphore render_finished_semaphore_;
-		VkFence in_flight_fence_;
+		std::vector<VkCommandBuffer> command_buffers_;
+		std::vector<VkSemaphore> image_available_semaphores_;
+		std::vector<VkSemaphore> render_finished_semaphores_;
+		std::vector<VkFence> in_flight_fences_;
 
 		const std::vector<const char*> validation_layers_ = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> device_extensions_ = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };

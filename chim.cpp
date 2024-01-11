@@ -1,8 +1,10 @@
 #include "chim.hpp"
 
-chim::Chim::Chim(){}
+using namespace chim;
 
-chim::Chim::~Chim(){}
+Chim::Chim(){}
+
+Chim::~Chim(){}
 
 /**
 * @brief Initializes the main window.
@@ -10,7 +12,7 @@ chim::Chim::~Chim(){}
 * - 1280x720
 * - Windowed
 */
-void chim::Chim::Init(void) {
+void Chim::Init(void) {
 	// Initialize SDL2 & create a window
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		throw ChimException(std::string("Video Initialization: ") + SDL_GetError());
@@ -36,7 +38,7 @@ void chim::Chim::Init(void) {
 	CreateSyncObjects();
 }
 
-void chim::Chim::Run(void) {
+void Chim::Run(void) {
 	while (keep_window_open_) {
 
 		// Check for user input
@@ -56,7 +58,7 @@ void chim::Chim::Run(void) {
 
 }
 
-void chim::Chim::Cleanup(void) {
+void Chim::Cleanup(void) {
 	vkDestroySemaphore(device_, image_available_semaphore_, nullptr);
 	vkDestroySemaphore(device_, render_finished_semaphore_, nullptr);
 	vkDestroyFence(device_, in_flight_fence_, nullptr);
@@ -87,7 +89,7 @@ void chim::Chim::Cleanup(void) {
 	SDL_Quit();
 }
 
-void chim::Chim::DrawFrame(void) {
+void Chim::DrawFrame(void) {
 	vkWaitForFences(device_, 1, &in_flight_fence_, VK_TRUE, UINT64_MAX);
 	vkResetFences(device_, 1, &in_flight_fence_);
 
@@ -137,7 +139,7 @@ void chim::Chim::DrawFrame(void) {
 * @brief Initializes the Vulkan library.
 * @details The instance is the connection between the Vulkan library and the rest of the application.
 */
-void chim::Chim::CreateInstance(void){
+void Chim::CreateInstance(void){
 	if (enable_validation_layers && !CheckValidationLayerSupport()) {
 		throw ChimException("Validation layers requested, but not available!");
 	}
@@ -176,7 +178,7 @@ void chim::Chim::CreateInstance(void){
 	}
 }
 
-void chim::Chim::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create_info){
+void Chim::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create_info){
 	create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -184,7 +186,7 @@ void chim::Chim::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInf
 	create_info.pfnUserCallback = DebugCallback;
 }
 
-VkResult chim::Chim::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+VkResult Chim::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) {
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -194,7 +196,7 @@ VkResult chim::Chim::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkD
 	}
 }
 
-void chim::Chim::CreateFrameBuffers(void) {
+void Chim::CreateFrameBuffers(void) {
 	swap_chain_frame_buffers_.resize(swap_chain_image_views_.size());
 
 	for (size_t i = 0; i < swap_chain_image_views_.size(); i++) {
@@ -217,14 +219,14 @@ void chim::Chim::CreateFrameBuffers(void) {
 	}
 }
 
-void chim::Chim::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+void Chim::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
 	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr) {
 		func(instance, debugMessenger, pAllocator);
 	}
 }
 
-void chim::Chim::CreateCommandPool(void) {
+void Chim::CreateCommandPool(void) {
 	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(physical_device_);
 
 	VkCommandPoolCreateInfo poolInfo{};
@@ -237,7 +239,7 @@ void chim::Chim::CreateCommandPool(void) {
 	}
 }
 
-void chim::Chim::CreateCommandBuffer(void) {
+void Chim::CreateCommandBuffer(void) {
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = command_pool_;
@@ -249,7 +251,7 @@ void chim::Chim::CreateCommandBuffer(void) {
 	}
 }
 
-void chim::Chim::CreateSyncObjects(void) {
+void Chim::CreateSyncObjects(void) {
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -264,7 +266,7 @@ void chim::Chim::CreateSyncObjects(void) {
 	}
 }
 
-void chim::Chim::SetupDebugMessenger(void){
+void Chim::SetupDebugMessenger(void){
 	if (!enable_validation_layers) return;
 
 	VkDebugUtilsMessengerCreateInfoEXT create_info;
@@ -275,13 +277,13 @@ void chim::Chim::SetupDebugMessenger(void){
 	}
 }
 
-void chim::Chim::CreateSurface(void) {
+void Chim::CreateSurface(void) {
 	if (SDL_Vulkan_CreateSurface(window_, instance_, &surface_) != SDL_TRUE) {
 		throw ChimException("Failed to create window surface!");
 	}
 }
 
-bool chim::Chim::CheckValidationLayerSupport(void){
+bool Chim::CheckValidationLayerSupport(void){
 	uint32_t layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
 
@@ -306,7 +308,7 @@ bool chim::Chim::CheckValidationLayerSupport(void){
 	return true;
 }
 
-std::vector<const char*> chim::Chim::GetRequiredExtensions(void) {
+std::vector<const char*> Chim::GetRequiredExtensions(void) {
 	uint32_t sdl_extension_count;
 	const char** sdl_extensions;
 	SDL_Vulkan_GetInstanceExtensions(window_, &sdl_extension_count, nullptr);
@@ -322,7 +324,7 @@ std::vector<const char*> chim::Chim::GetRequiredExtensions(void) {
 	return extensions;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL chim::Chim::DebugCallback(
+VKAPI_ATTR VkBool32 VKAPI_CALL Chim::DebugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -333,7 +335,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL chim::Chim::DebugCallback(
 	return VK_FALSE;
 }
 
-void chim::Chim::PickPhysicalDevice(void){
+void Chim::PickPhysicalDevice(void){
 	uint32_t device_count = 0;
 	vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
 
@@ -361,7 +363,7 @@ void chim::Chim::PickPhysicalDevice(void){
 	}
 }
 
-int chim::Chim::RateDeviceSuitability(VkPhysicalDevice device){
+int Chim::RateDeviceSuitability(VkPhysicalDevice device){
 	
 	if (!IsDeviceSuitable(device)) {
 		return 0;
@@ -390,7 +392,7 @@ int chim::Chim::RateDeviceSuitability(VkPhysicalDevice device){
 	return score;
 }
 
-void chim::Chim::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+void Chim::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -436,7 +438,7 @@ void chim::Chim::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
 	}
 }
 
-bool chim::Chim::IsDeviceSuitable(VkPhysicalDevice device){
+bool Chim::IsDeviceSuitable(VkPhysicalDevice device){
 	QueueFamilyIndices indices = FindQueueFamilies(device);
 
 	bool extensionsSupported = CheckDeviceExtensionSupport(device);
@@ -450,7 +452,7 @@ bool chim::Chim::IsDeviceSuitable(VkPhysicalDevice device){
 	return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
-bool chim::Chim::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
+bool Chim::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
 	uint32_t extensionCount;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -466,7 +468,7 @@ bool chim::Chim::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
 	return requiredExtensions.empty();
 }
 
-chim::QueueFamilyIndices chim::Chim::FindQueueFamilies(VkPhysicalDevice device) {
+chim::QueueFamilyIndices Chim::FindQueueFamilies(VkPhysicalDevice device) {
 	QueueFamilyIndices indices;
 
 	uint32_t queueFamilyCount = 0;
@@ -498,7 +500,7 @@ chim::QueueFamilyIndices chim::Chim::FindQueueFamilies(VkPhysicalDevice device) 
 	return indices;
 }
 
-chim::SwapChainSupportDetails chim::Chim::QuerySwapChainSupport(VkPhysicalDevice device) {
+chim::SwapChainSupportDetails Chim::QuerySwapChainSupport(VkPhysicalDevice device) {
 	SwapChainSupportDetails details;
 
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface_, &details.capabilities);
@@ -522,7 +524,7 @@ chim::SwapChainSupportDetails chim::Chim::QuerySwapChainSupport(VkPhysicalDevice
 	return details;
 }
 
-VkSurfaceFormatKHR chim::Chim::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+VkSurfaceFormatKHR Chim::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
 	for (const auto& availableFormat : availableFormats) {
 		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 			return availableFormat;
@@ -532,7 +534,7 @@ VkSurfaceFormatKHR chim::Chim::ChooseSwapSurfaceFormat(const std::vector<VkSurfa
 	return availableFormats[0];
 }
 
-VkPresentModeKHR chim::Chim::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+VkPresentModeKHR Chim::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
 	for (const auto& availablePresentMode : availablePresentModes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 			return availablePresentMode;
@@ -541,7 +543,7 @@ VkPresentModeKHR chim::Chim::ChooseSwapPresentMode(const std::vector<VkPresentMo
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D chim::Chim::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+VkExtent2D Chim::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}
@@ -560,7 +562,7 @@ VkExtent2D chim::Chim::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabili
 	}
 }
 
-void chim::Chim::CreateLogicalDevice(void) {
+void Chim::CreateLogicalDevice(void) {
 	QueueFamilyIndices indices = FindQueueFamilies(physical_device_);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -605,7 +607,7 @@ void chim::Chim::CreateLogicalDevice(void) {
 	vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &present_queue_);
 }
 
-void chim::Chim::CreateSwapChain(void) {
+void Chim::CreateSwapChain(void) {
 	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(physical_device_);
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -659,7 +661,7 @@ void chim::Chim::CreateSwapChain(void) {
 	swap_chain_extent_ = extent;
 }
 
-void chim::Chim::CreateImageViews(void) {
+void Chim::CreateImageViews(void) {
 	swap_chain_image_views_.resize(swap_chain_images_.size());
 
 	for (size_t i = 0; i < swap_chain_images_.size(); i++) {
@@ -684,7 +686,7 @@ void chim::Chim::CreateImageViews(void) {
 	}
 }
 
-void chim::Chim::CreateGraphicsPipeline() {
+void Chim::CreateGraphicsPipeline() {
 	auto vertShaderCode = ReadFile(SHADER_DIRECTORY+std::string("/vert.spv"));
 	auto fragShaderCode = ReadFile(SHADER_DIRECTORY + std::string("/frag.spv"));
 
@@ -792,7 +794,7 @@ void chim::Chim::CreateGraphicsPipeline() {
 	vkDestroyShaderModule(device_, vertShaderModule, nullptr);
 }
 
-void chim::Chim::CreateRenderPass(void) {
+void Chim::CreateRenderPass(void) {
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = swap_chain_image_format_;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -824,7 +826,7 @@ void chim::Chim::CreateRenderPass(void) {
 	}
 }
 
-VkShaderModule chim::Chim::CreateShaderModule(const std::vector<char>& code) {
+VkShaderModule Chim::CreateShaderModule(const std::vector<char>& code) {
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = code.size();
@@ -838,7 +840,7 @@ VkShaderModule chim::Chim::CreateShaderModule(const std::vector<char>& code) {
 	return shaderModule;
 }
 
-std::vector<char> chim::Chim::ReadFile(const std::string& filename) {
+std::vector<char> Chim::ReadFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 	if (!file.is_open()) {

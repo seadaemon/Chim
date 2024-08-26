@@ -59,6 +59,13 @@ void Chim::Run(void) {
 }
 
 void Chim::Cleanup(void) {
+
+	CleanupSwapChain();
+
+	vkDestroyPipeline(device_, graphics_pipeline_, nullptr);
+	vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
+	vkDestroyRenderPass(device_, render_pass_, nullptr);
+
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(device_, render_finished_semaphores_[i], nullptr);
 		vkDestroySemaphore(device_, image_available_semaphores_[i], nullptr);
@@ -67,19 +74,6 @@ void Chim::Cleanup(void) {
 
 	vkDestroyCommandPool(device_, command_pool_, nullptr);
 
-	for (auto framebuffer : swap_chain_frame_buffers_) {
-		vkDestroyFramebuffer(device_, framebuffer, nullptr);
-	}
-
-	vkDestroyPipeline(device_, graphics_pipeline_, nullptr);
-	vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
-	vkDestroyRenderPass(device_, render_pass_, nullptr);
-
-	for (auto imageView : swap_chain_image_views_) {
-		vkDestroyImageView(device_, imageView, nullptr);
-	}
-
-	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 	vkDestroyDevice(device_, nullptr);
 
 	if (enable_validation_layers) {
@@ -676,7 +670,15 @@ void Chim::CreateSwapChain(void) {
 }
 
 void Chim::CleanupSwapChain() {
+	for (auto framebuffer : swap_chain_frame_buffers_) {
+		vkDestroyFramebuffer(device_, framebuffer, nullptr);
+	}
 
+	for (auto imageView : swap_chain_image_views_) {
+		vkDestroyImageView(device_, imageView, nullptr);
+	}
+
+	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 }
 
 void Chim::RecreateSwapChain() {

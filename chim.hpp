@@ -1,6 +1,6 @@
 /**
 * @file chim.hpp
-* @author GP
+* @author George Power
 * @brief Initializes the SDL window and the Vulkan renderer.
 */
 #ifndef CHIM_HPP
@@ -80,7 +80,11 @@ namespace chim {
 		void CreateSurface(void);
 		void PickPhysicalDevice(void);
 		void CreateLogicalDevice(void);
+		
 		void CreateSwapChain(void);
+		void CleanupSwapChain(void);
+		void RecreateSwapChain(void);
+
 		void CreateImageViews(void);
 		void CreateRenderPass(void);
 		void CreateGraphicsPipeline(void);

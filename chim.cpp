@@ -70,6 +70,7 @@ void Chim::Cleanup(void) {
 	for (auto framebuffer : swap_chain_frame_buffers_) {
 		vkDestroyFramebuffer(device_, framebuffer, nullptr);
 	}
+
 	vkDestroyPipeline(device_, graphics_pipeline_, nullptr);
 	vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
 	vkDestroyRenderPass(device_, render_pass_, nullptr);
@@ -672,6 +673,18 @@ void Chim::CreateSwapChain(void) {
 
 	swap_chain_image_format_ = surfaceFormat.format;
 	swap_chain_extent_ = extent;
+}
+
+void Chim::CleanupSwapChain() {
+
+}
+
+void Chim::RecreateSwapChain() {
+	vkDeviceWaitIdle(device_);
+
+	CreateSwapChain();
+	CreateImageViews();
+	CreateFrameBuffers();
 }
 
 void Chim::CreateImageViews(void) {

@@ -1,20 +1,23 @@
-#include <iostream>
-#include <exception>
 #include "chim.hpp"
+#include <exception>
+#include <iostream>
 
-int main(int argc, char *argv[]) {
-	
-	chim::Chim app;
+int main(int argc, char *argv[])
+{
 
-	try {
-		app.Init();
-		app.Run();
-		app.Cleanup();
-	}
-	catch(std::exception &e){
-		std::cerr << e.what() << std::endl;
-		return EXIT_FAILURE;
-	}
+    chim::Chim app;
 
-	return EXIT_SUCCESS;
+    try
+    {
+        app.Init();
+        app.Run();
+        app.Cleanup();
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }

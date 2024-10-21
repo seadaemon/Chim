@@ -1,0 +1,7 @@
+BasedOnStyle: LLVM
+AlignArrayOfStructures: Right
+AllowShortFunctionsOnASingleLine: Inline
+BreakBeforeBraces: Allman
+ColumnLimit: 120
+IndentWidth: 4
+ReferenceAlignment: Left

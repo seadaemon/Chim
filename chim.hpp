@@ -129,15 +129,15 @@ class Chim
     static std::vector<char> ReadFile(const std::string& filename);
 
   private:
-    const uint32_t window_width_ = 1280;
-    const uint32_t window_height_ = 720;
+    const uint32_t window_width_ = 1920;
+    const uint32_t window_height_ = 1080;
     bool keep_window_open_ = true;
     const int MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t current_frame_ = 0;
     // SDL
     SDL_Window *window_ = nullptr;
     SDL_Event ev_;
-    bool resize_requested_ = false;
+    bool window_minimized_ = false;
     // SDL_Surface* window_icon_ = nullptr; // TBA
 
     // Vulkan

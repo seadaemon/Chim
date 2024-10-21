@@ -27,6 +27,8 @@ void Chim::Init(void)
         throw ChimException(std::string("Window creation: ") + SDL_GetError());
     }
 
+    SDL_SetWindowMinimumSize(window_, 640, 360);
+
     SDL_SetWindowResizable(window_, SDL_TRUE);
 
     // Initialize Vulkan
@@ -60,6 +62,12 @@ void Chim::Run(void)
             case SDL_WINDOWEVENT:
                 switch (ev_.window.event)
                 {
+                case SDL_WINDOWEVENT_MINIMIZED:
+                    window_minimized_ = true;
+                    break;
+                case SDL_WINDOWEVENT_RESTORED:
+                    window_minimized_ = false;
+                    break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                     frame_buffer_resized_ = true;
                     break;
@@ -73,8 +81,10 @@ void Chim::Run(void)
             frame_buffer_resized_ = false;
             RecreateSwapChain();
         }
-
-        DrawFrame();
+        if (!window_minimized_)
+        {
+            DrawFrame();
+        }
     }
 
     vkDeviceWaitIdle(device_);
@@ -175,16 +185,10 @@ void Chim::DrawFrame(void)
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || frame_buffer_resized_)
     {
         RecreateSwapChain();
-        // resize_requested_ = true;
     }
     else if (result != VK_SUCCESS)
     {
         throw std::runtime_error("failed to present swap chain image!");
-    }
-
-    if (resize_requested_)
-    {
-        RecreateSwapChain();
     }
 
     current_frame_ = (current_frame_ + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -825,21 +829,24 @@ void Chim::CleanupSwapChain()
 
 void Chim::RecreateSwapChain()
 {
+    int width, height;
+    SDL_GetWindowSize(window_, &width, &height);
+
+    // Ensures the window area is greater than 1
+    // if (width <= 1 || height <= 1)
+    //{
+    //    SDL_GetWindowSize(window_, &width, &height);
+    //}
+
     vkDeviceWaitIdle(device_);
 
     CleanupSwapChain();
-
-    int w, h;
-    SDL_GetWindowSize(window_, &w, &h);
-    swap_chain_extent_.width = w;
-    swap_chain_extent_.height = h;
 
     CreateSwapChain();
     CreateImageViews();
     CreateFrameBuffers();
 
     frame_buffer_resized_ = false;
-    // resize_requested_ = false;
 }
 
 void Chim::CreateImageViews(void)

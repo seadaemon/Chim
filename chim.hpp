@@ -11,9 +11,11 @@
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <exception>
 #include <fstream>
+#include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <iostream>
@@ -47,6 +49,44 @@ class ChimException : public std::exception
     ChimException(std::string message) : message_("[CHIM Exception] " + message){};
     virtual const char *what() const throw() { return message_.c_str(); };
     virtual ~ChimException() throw(){};
+};
+
+struct Vertex
+{
+    glm::vec2 pos;
+    glm::vec3 color;
+
+    static VkVertexInputBindingDescription GetBindingDescription()
+    {
+        VkVertexInputBindingDescription binding_description{};
+        binding_description.binding = 0;
+        binding_description.stride = sizeof(Vertex);
+        binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return binding_description;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions()
+    {
+        std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions{};
+        attribute_descriptions[0].binding = 0;
+        attribute_descriptions[0].location = 0;
+        attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attribute_descriptions[0].offset = offsetof(Vertex, pos);
+
+        attribute_descriptions[1].binding = 0;
+        attribute_descriptions[1].location = 1;
+        attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attribute_descriptions[1].offset = offsetof(Vertex, color);
+
+        return attribute_descriptions;
+    }
+};
+
+const std::vector<Vertex> vertices = {
+    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 };
 
 struct QueueFamilyIndices
@@ -95,6 +135,8 @@ class Chim
     void CreateGraphicsPipeline(void);
     void CreateFrameBuffers(void);
     void CreateCommandPool(void);
+    void CreateVertexBuffer(void);
+    uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     void CreateCommandBuffers(void);
     void CreateSyncObjects(void);
 
@@ -129,8 +171,8 @@ class Chim
     static std::vector<char> ReadFile(const std::string& filename);
 
   private:
-    const uint32_t window_width_ = 1920;
-    const uint32_t window_height_ = 1080;
+    const uint32_t window_width_ = 1280;
+    const uint32_t window_height_ = 720;
     bool keep_window_open_ = true;
     const int MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t current_frame_ = 0;
@@ -167,6 +209,9 @@ class Chim
     std::vector<VkSemaphore> render_finished_semaphores_;
     std::vector<VkFence> in_flight_fences_;
     bool frame_buffer_resized_ = false;
+
+    VkBuffer vertex_buffer_;
+    VkDeviceMemory vertex_buffer_memory_;
 
     const std::vector<const char *> validation_layers_ = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char *> device_extensions_ = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};

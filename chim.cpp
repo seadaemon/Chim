@@ -43,6 +43,7 @@ void Chim::Init(void)
     CreateGraphicsPipeline();
     CreateFrameBuffers();
     CreateCommandPool();
+    CreateVertexBuffer();
     CreateCommandBuffers();
     CreateSyncObjects();
 }
@@ -94,6 +95,9 @@ void Chim::Cleanup(void)
 {
 
     CleanupSwapChain();
+
+    vkDestroyBuffer(device_, vertex_buffer_, nullptr);
+    vkFreeMemory(device_, vertex_buffer_memory_, nullptr);
 
     vkDestroyPipeline(device_, graphics_pipeline_, nullptr);
     vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
@@ -322,6 +326,55 @@ void Chim::CreateCommandPool(void)
     }
 }
 
+void Chim::CreateVertexBuffer(void)
+{
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(device_, &bufferInfo, nullptr, &vertex_buffer_) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create vertex buffer!");
+    }
+
+    VkMemoryRequirements mem_requirements;
+    vkGetBufferMemoryRequirements(device_, vertex_buffer_, &mem_requirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = mem_requirements.size;
+    allocInfo.memoryTypeIndex = FindMemoryType(
+        mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    if (vkAllocateMemory(device_, &allocInfo, nullptr, &vertex_buffer_memory_) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to allocate vertex buffer memory!");
+    }
+    vkBindBufferMemory(device_, vertex_buffer_, vertex_buffer_memory_, 0);
+
+    void *data;
+    vkMapMemory(device_, vertex_buffer_memory_, 0, bufferInfo.size, 0, &data);
+    memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+    vkUnmapMemory(device_, vertex_buffer_memory_);
+}
+
+uint32_t Chim::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties mem_properties;
+    vkGetPhysicalDeviceMemoryProperties(physical_device_, &mem_properties);
+
+    for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
+    {
+        if ((typeFilter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
+        {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable memory type!");
+}
+
 void Chim::CreateCommandBuffers(void)
 {
     command_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
@@ -548,7 +601,11 @@ void Chim::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInde
     scissor.extent = swap_chain_extent_;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    VkBuffer vertexBuffers[] = {vertex_buffer_};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+    vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -901,8 +958,13 @@ void Chim::CreateGraphicsPipeline()
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    auto binding_description = Vertex::GetBindingDescription();
+    auto attribute_descriptions = Vertex::GetAttributeDescriptions();
+
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &binding_description;
+    vertexInputInfo.pVertexAttributeDescriptions = attribute_descriptions.data();
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

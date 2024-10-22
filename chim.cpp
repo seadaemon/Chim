@@ -40,11 +40,13 @@ void Chim::Init(void)
     CreateSwapChain();
     CreateImageViews();
     CreateRenderPass();
+    CreateDescriptorSetLayout();
     CreateGraphicsPipeline();
     CreateFrameBuffers();
     CreateCommandPool();
     CreateVertexBuffer();
     CreateIndexBuffer();
+    CreateUniformBuffers();
     CreateCommandBuffers();
     CreateSyncObjects();
 }
@@ -97,6 +99,14 @@ void Chim::Cleanup(void)
 
     CleanupSwapChain();
 
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        vkDestroyBuffer(device_, uniform_buffers_[i], nullptr);
+        vkFreeMemory(device_, uniform_buffers_memory_[i], nullptr);
+    }
+
+    vkDestroyDescriptorSetLayout(device_, descriptor_set_layout_, nullptr);
+
     vkDestroyBuffer(device_, index_buffer_, nullptr);
     vkFreeMemory(device_, index_buffer_memory_, nullptr);
 
@@ -141,13 +151,14 @@ void Chim::DrawFrame(void)
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         RecreateSwapChain();
-        // resize_requested_ = true;
         return;
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
+
+    UpdateUniformBuffer(current_frame_);
 
     // Only reset fence if submitting work
     vkResetFences(device_, 1, &in_flight_fences_[current_frame_]);
@@ -376,6 +387,24 @@ void chim::Chim::CreateIndexBuffer(void)
 
     vkDestroyBuffer(device_, stagingBuffer, nullptr);
     vkFreeMemory(device_, stagingBufferMemory, nullptr);
+}
+
+void chim::Chim::CreateUniformBuffers(void)
+{
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    uniform_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
+    uniform_buffers_memory_.resize(MAX_FRAMES_IN_FLIGHT);
+    uniform_buffers_mapped_.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniform_buffers_[i],
+                     uniform_buffers_memory_[i]);
+
+        vkMapMemory(device_, uniform_buffers_memory_[i], 0, bufferSize, 0, &uniform_buffers_mapped_[i]);
+    }
 }
 
 void Chim::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
@@ -643,6 +672,23 @@ int Chim::RateDeviceSuitability(VkPhysicalDevice device)
     }
 
     return score;
+}
+
+void Chim::UpdateUniformBuffer(uint32_t currentImage)
+{
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj =
+        glm::perspective(glm::radians(45.0f), swap_chain_extent_.width / (float)swap_chain_extent_.height, 0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+
+    memcpy(uniform_buffers_mapped_[currentImage], &ubo, sizeof(ubo));
 }
 
 void Chim::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -1100,8 +1146,8 @@ void Chim::CreateGraphicsPipeline()
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout_;
 
     if (vkCreatePipelineLayout(device_, &pipelineLayoutInfo, nullptr, &pipeline_layout_) != VK_SUCCESS)
     {
@@ -1165,6 +1211,26 @@ void Chim::CreateRenderPass(void)
     if (vkCreateRenderPass(device_, &renderPassInfo, nullptr, &render_pass_) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create render pass!");
+    }
+}
+
+void chim::Chim::CreateDescriptorSetLayout(void)
+{
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(device_, &layoutInfo, nullptr, &descriptor_set_layout_) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create descriptor set layout!");
     }
 }
 

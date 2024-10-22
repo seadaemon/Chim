@@ -7,15 +7,18 @@
 #define CHIM_HPP
 
 #define SDL_MAIN_HANDLED
+#define GLM_FORCE_RADIANS
 #include "path_config.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <fstream>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <iostream>
@@ -83,6 +86,13 @@ struct Vertex
     }
 };
 
+struct UniformBufferObject
+{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
 const std::vector<Vertex> vertices = {
     {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
     { {0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
@@ -137,11 +147,13 @@ class Chim
 
     void CreateImageViews(void);
     void CreateRenderPass(void);
+    void CreateDescriptorSetLayout(void);
     void CreateGraphicsPipeline(void);
     void CreateFrameBuffers(void);
     void CreateCommandPool(void);
     void CreateVertexBuffer(void);
     void CreateIndexBuffer(void);
+    void CreateUniformBuffers(void);
     void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
                       VkDeviceMemory& bufferMemory);
     void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
@@ -149,6 +161,7 @@ class Chim
     void CreateCommandBuffers(void);
     void CreateSyncObjects(void);
 
+    void UpdateUniformBuffer(uint32_t currentImage);
     void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     void DrawFrame(void);
@@ -208,6 +221,7 @@ class Chim
     std::vector<VkFramebuffer> swap_chain_frame_buffers_;
 
     VkRenderPass render_pass_;
+    VkDescriptorSetLayout descriptor_set_layout_;
     VkPipeline graphics_pipeline_;
     VkPipelineLayout pipeline_layout_;
 
@@ -223,6 +237,10 @@ class Chim
     VkDeviceMemory vertex_buffer_memory_;
     VkBuffer index_buffer_;
     VkDeviceMemory index_buffer_memory_;
+
+    std::vector<VkBuffer> uniform_buffers_;
+    std::vector<VkDeviceMemory> uniform_buffers_memory_;
+    std::vector<void *> uniform_buffers_mapped_;
 
     const std::vector<const char *> validation_layers_ = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char *> device_extensions_ = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};

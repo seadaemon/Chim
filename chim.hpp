@@ -84,9 +84,14 @@ struct Vertex
 };
 
 const std::vector<Vertex> vertices = {
-    {{0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    { {0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {  {0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    { {-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0,
 };
 
 struct QueueFamilyIndices
@@ -136,6 +141,7 @@ class Chim
     void CreateFrameBuffers(void);
     void CreateCommandPool(void);
     void CreateVertexBuffer(void);
+    void CreateIndexBuffer(void);
     void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
                       VkDeviceMemory& bufferMemory);
     void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
@@ -215,6 +221,8 @@ class Chim
 
     VkBuffer vertex_buffer_;
     VkDeviceMemory vertex_buffer_memory_;
+    VkBuffer index_buffer_;
+    VkDeviceMemory index_buffer_memory_;
 
     const std::vector<const char *> validation_layers_ = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char *> device_extensions_ = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
